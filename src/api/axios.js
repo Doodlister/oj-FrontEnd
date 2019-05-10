@@ -50,7 +50,14 @@ http.interceptors.response.use(response => {
   return data
 }, error => {
   let info = {}
-  let { status, statusText, data } = error.response
+  console.log(error.response)
+  let { status, statusText, data } = {}
+  if (typeof error.response === 'undifined') {
+    status = error.response.status
+    statusText = error.response.statusText
+    data = error.response.data
+  }
+
   if (!error.response) {
     info = {
       code: 5000,
@@ -65,6 +72,7 @@ http.interceptors.response.use(response => {
     // 统一判断相应格式
     // 此处整理错误信息格式
     // 判断是否token失效
+
     if (error.response.data.code == '40101') {
       // localStorage.removeItem('token')
       utils.setLogout()

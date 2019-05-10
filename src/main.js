@@ -10,7 +10,7 @@ import { Message } from 'iview'
 
 Vue.config.productionTip = false
 Vue.use(api)
-
+// Vue.prototype.$api = api
 Message.config({
   top: 100
 })

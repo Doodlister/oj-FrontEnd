@@ -52,23 +52,29 @@
                  order="2">
             <Card :bordered="false"
                   dis-hover>
-              <Select v-model="model6"
+              <Select v-model="language"
                       style="width:200px">
-                <Option value="JAVA">JAVA</Option>
-                <Option value="C++"
-                        disabled>C++</Option>
-                <Option value="Python">Python</Option>
+                <Option v-for="item in languageList"
+                        :value="item.value"
+                        :key="item.value">{{ item.label }}</Option>
               </Select>
+              <div style="display: inline-block;margin-left:20px"
+                   v-if="showStatus">
+                <Icon type="md-code" />
+                <Tag type="dot"
+                     :color="statusColor">{{statusText}}</Tag>
+              </div>
+
               <Button style="float: right;"
                       type="primary"
-                      label="large">Submit</Button>
-              <Input v-model="value6"
+                      label="large"
+                      @click="submit">Submit</Button>
+              <Input v-model="code"
                      type="textarea"
                      :rows="30"
                      placeholder="Enter something..." />
             </Card>
             </Col>
-
           </Row>
 
         </TabPane>
@@ -88,11 +94,30 @@ export default {
   name: 'problemContent',
   data () {
     return {
-      problem: {}
+      language: '',
+      problem: {},
+      code: '',
+      languageList: [
+        {
+          value: 'C',
+          label: 'C'
+        }, {
+          value: 'Java',
+          label: 'Java'
+        }
+      ],
+      submissionId: '',
+      intervalId: '',
+      showStatus: false,
+      statusColor: '',
+      statusText: ''
     }
   },
   created () {
     this.getProblem(this.$route.params.id)
+  },
+  beforeDestroy () {
+    clearInterval(this.intervalId)
   },
   methods: {
     async getProblem (id) {
@@ -101,6 +126,79 @@ export default {
         this.problem = response
       } catch (e) {
         console.log(e)
+      }
+    },
+    async submit () {
+      let param = {
+        code: this.code,
+        language: this.language
+      }
+      try {
+        let response = await this.$api.submission.submission(param, this.$route.params.id)
+        // 取回SubmissionID 用于轮询提交结果
+        this.submissionId = response.id
+        // 展示状态Tag
+        this.showStatus = true
+        this.statusColor = 'primary'
+        this.statusText = 'Waiting'
+        this.intervalId = self.setInterval(this.inqueyResult, 1000)
+      } catch (e) {
+        console.log(e)
+      }
+    },
+    async inqueyResult () {
+      if (this.submissionId == '') {
+        clearInterval(this.intervalId)
+      } else {
+        let response = await this.$api.submission.getResult(this.submissionId)
+        if (response.result != 0) {
+          clearInterval(this.intervalId)
+          this.setStatusTag(response.result)
+        }
+      }
+    },
+    setStatusTag (resultCode) {
+      switch (resultCode) {
+        case 1:
+          this.showStatus = true
+          this.statusColor = 'success'
+          this.statusText = 'AC'
+          break
+        case 2:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'WA'
+          break
+        case 3:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'TLE'
+          break
+        case 4:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'OLE'
+          break
+        case 5:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'MLE'
+          break
+        case 6:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'RE'
+          break
+        case 7:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'PE'
+          break
+        case 8:
+          this.showStatus = true
+          this.statusColor = 'error'
+          this.statusText = 'CE'
+          break
       }
     }
   }
